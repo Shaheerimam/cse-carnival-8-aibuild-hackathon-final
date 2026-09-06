@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "206623577998",
+    "project_id": "profmate-e156f",
+    "storage_bucket": "profmate-e156f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:206623577998:android:bf16615183083d859bf6df",
+        "android_client_info": {
+          "package_name": "com.example.profmate"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCGnpcJDkqeJrO4Qq3EivId_FeGws2oEHA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

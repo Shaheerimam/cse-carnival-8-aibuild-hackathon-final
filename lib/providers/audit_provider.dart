@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../models/audit_session.dart';
+import '../models/audit_report.dart';
 import '../services/gemini_service.dart';
 import '../services/audit_storage_service.dart';
 
@@ -34,6 +35,69 @@ class AuditProvider extends ChangeNotifier {
 
   String _reskinnerError = '';
   String get reskinnerError => _reskinnerError;
+
+  // ── Dashboard Computed Properties ─────────────────────────────────────────
+
+  /// Number of completed audits.
+  int get completedCount =>
+      _history.where((s) => s.status == AuditStatus.complete).length;
+
+  /// Average quality score across all completed audits.
+  int get averageScore {
+    final completed =
+        _history.where((s) => s.status == AuditStatus.complete).toList();
+    if (completed.isEmpty) return 0;
+    final total = completed
+        .map((s) => s.report?.overallScore ?? 0)
+        .fold(0, (a, b) => a + b);
+    return total ~/ completed.length;
+  }
+
+  /// The most recent completed audit session.
+  AuditSession? get lastCompletedAudit {
+    try {
+      return _history.firstWhere((s) => s.status == AuditStatus.complete);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Theory/Application percentage across all completed audits (mark-weighted average).
+  ({double theory, double application}) get theoryApplicationTrend {
+    final completed = _history
+        .where((s) => s.status == AuditStatus.complete && s.report != null)
+        .toList();
+    if (completed.isEmpty) return (theory: 50.0, application: 50.0);
+
+    double totalTheory = 0;
+    double totalApp = 0;
+    for (final s in completed) {
+      totalTheory += s.report!.markWeightedRatio.theoryPercent;
+      totalApp += s.report!.markWeightedRatio.applicationPercent;
+    }
+    return (
+      theory: totalTheory / completed.length,
+      application: totalApp / completed.length,
+    );
+  }
+
+  /// Most common recommendation type across all audits.
+  String get mostCommonRecommendationType {
+    final allRecs = _history
+        .where((s) => s.status == AuditStatus.complete && s.report != null)
+        .expand((s) => s.report!.recommendations)
+        .toList();
+    if (allRecs.isEmpty) return 'N/A';
+
+    final counts = <String, int>{};
+    for (final r in allRecs) {
+      counts[r.type] = (counts[r.type] ?? 0) + 1;
+    }
+    return counts.entries
+        .reduce((a, b) => a.value >= b.value ? a : b)
+        .key
+        .replaceAll('_', ' ');
+  }
 
   // ── Initialisation ─────────────────────────────────────────────────────────
   Future<void> loadHistory() async {
