@@ -15,7 +15,7 @@ class GeminiService {
   );
 
   late final GenerativeModel _model = GenerativeModel(
-    model: 'gemini-1.5-pro',
+    model: 'gemini-3.1-flash-lite',
     apiKey: _apiKey,
     generationConfig: GenerationConfig(
       temperature: 0.2,
@@ -110,10 +110,12 @@ RULES:
   }) async {
     if (!isConfigured) {
       throw Exception(
-          'Gemini API key not configured. Run with --dart-define=GEMINI_API_KEY=<key>');
+        'Gemini API key not configured. Run with --dart-define=GEMINI_API_KEY=<key>',
+      );
     }
 
-    final prompt = '''
+    final prompt =
+        '''
 === COURSE OUTLINE / SYLLABUS ===
 $syllabusText
 
@@ -166,7 +168,8 @@ No markdown. No commentary.
       throw Exception('Gemini API key not configured.');
     }
 
-    final prompt = '''
+    final prompt =
+        '''
 Original question (${question.marks} marks, ${question.cognitiveLevel} level, ${question.topic} topic):
 "${question.text}"
 

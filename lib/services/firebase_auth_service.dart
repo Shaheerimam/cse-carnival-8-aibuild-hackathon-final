@@ -1,12 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 
 /// Wrapper around Firebase Authentication.
-/// Uses anonymous auth for a frictionless hackathon demo experience.
 class FirebaseAuthService {
   FirebaseAuthService._();
   static final FirebaseAuthService instance = FirebaseAuthService._();
 
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  FirebaseAuth get _auth => FirebaseAuth.instance;
 
   /// Current authenticated user, or null.
   User? get currentUser => _auth.currentUser;
@@ -20,13 +19,30 @@ class FirebaseAuthService {
   /// Stream of authentication state changes.
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  /// Sign in anonymously — creates a temporary account for hackathon use.
-  /// If already signed in, returns the existing user.
-  Future<User?> signInAnonymously() async {
-    if (_auth.currentUser != null) return _auth.currentUser;
-    final credential = await _auth.signInAnonymously();
+  Future<User?> signIn({
+    required String email,
+    required String password,
+  }) async {
+    final credential = await _auth.signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
     return credential.user;
   }
+
+  Future<User?> signUp({
+    required String email,
+    required String password,
+  }) async {
+    final credential = await _auth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+    return credential.user;
+  }
+
+  Future<void> sendPasswordResetEmail(String email) =>
+      _auth.sendPasswordResetEmail(email: email);
 
   /// Sign out the current user.
   Future<void> signOut() async {

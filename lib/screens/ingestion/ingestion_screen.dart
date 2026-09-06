@@ -56,8 +56,8 @@ class _IngestionScreenState extends State<IngestionScreen> {
             ),
             const SizedBox(height: 14),
             DocumentUploadCard(
-              title: 'Draft Exam Paper',
-              subtitle: 'Pick a PDF or paste your exam questions',
+              title: 'Previous Question Paper',
+              subtitle: 'Pick a PDF or paste the questions to evaluate',
               icon: Icons.quiz_outlined,
               onTextReady: (text) => setState(() => _examText = text),
             ),
@@ -121,10 +121,7 @@ class _IngestionScreenState extends State<IngestionScreen> {
           icon: const Icon(Icons.auto_awesome_rounded, size: 18),
           label: Text(
             'Run AI Audit',
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-            ),
+            style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700),
           ),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.richBlack,
@@ -148,8 +145,11 @@ class _IngestionScreenState extends State<IngestionScreen> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.info_outline_rounded,
-              color: AppColors.accent, size: 18),
+          const Icon(
+            Icons.info_outline_rounded,
+            color: AppColors.accent,
+            size: 18,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -169,10 +169,10 @@ class _IngestionScreenState extends State<IngestionScreen> {
 
   void _runAudit() {
     context.read<AuditProvider>().startAudit(
-          courseTitle: _titleController.text.trim(),
-          syllabusText: _syllabusText,
-          examText: _examText,
-        );
+      courseTitle: _titleController.text.trim(),
+      syllabusText: _syllabusText,
+      examText: _examText,
+    );
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const ProcessingScreen()),
