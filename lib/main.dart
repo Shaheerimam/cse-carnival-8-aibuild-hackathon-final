@@ -1,4 +1,17 @@
 import 'package:flutter/material.dart';
+<<<<<<< Updated upstream
+=======
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'core/theme/app_theme.dart';
+import 'core/theme/app_colors.dart';
+import 'providers/audit_provider.dart';
+import 'providers/auth_provider.dart';
+import 'screens/app_shell.dart';
+import 'screens/auth/auth_screen.dart';
+>>>>>>> Stashed changes
 
 void main() {
   runApp(const MyApp());
@@ -69,6 +82,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+<<<<<<< Updated upstream
     // This method is rerun every time setState is called, for instance as done
     // by the _incrementCounter method above.
     //
@@ -108,6 +122,44 @@ class _MyHomePageState extends State<MyHomePage> {
             Text(
               '$_counter',
               style: Theme.of(context).textTheme.headlineMedium,
+=======
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider()..initialize(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => AuditProvider()..loadHistory(),
+        ),
+      ],
+      child: MaterialApp(
+        title: 'ExamAuditor',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.light,
+        home: Consumer<AuthProvider>(
+          builder: (context, authProvider, _) {
+            if (authProvider.isLoading) {
+              return const Scaffold(
+                body: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            }
+            if (authProvider.isAuthenticated) {
+              return const AppShell();
+            }
+            return const AuthScreen();
+          },
+        ),
+        builder: (context, child) {
+          // Clamp text scale to prevent layout overflows on large-font systems
+          final data = MediaQuery.of(context);
+          return MediaQuery(
+            data: data.copyWith(
+              textScaler: TextScaler.linear(
+                data.textScaler.scale(1.0).clamp(0.85, 1.15),
+              ),
+>>>>>>> Stashed changes
             ),
           ],
         ),
