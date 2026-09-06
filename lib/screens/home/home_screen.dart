@@ -3,481 +3,414 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
-import '../../models/audit_session.dart';
 import '../../providers/audit_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../widgets/glass_card.dart';
-import '../ingestion/ingestion_screen.dart';
-import '../history/history_screen.dart';
-import '../report/report_screen.dart';
+import '../../widgets/score_ring.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
-
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AuditProvider>().loadHistory();
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.ghostWhite,
       body: SafeArea(
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            SliverToBoxAdapter(child: _buildHeader()),
-            SliverToBoxAdapter(child: _buildQuickAction()),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 32, 24, 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Recent Audits',
-                      style: GoogleFonts.inter(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.richBlack,
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const HistoryScreen()),
-                      ),
-                      child: Text(
-                        'View all',
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.accent,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+        child: RefreshIndicator(
+          onRefresh: () => context.read<AuditProvider>().loadHistory(),
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
             ),
-            _buildHistoryList(),
-            const SliverToBoxAdapter(child: SizedBox(height: 40)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'ExamAuditor',
-                    style: GoogleFonts.inter(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.richBlack,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'AI-powered assessment intelligence',
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      color: AppColors.grey500,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: AppColors.richBlack,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.school_rounded,
-                  color: Colors.white,
-                  size: 22,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 28),
-          // Stats row
-          Consumer<AuditProvider>(
-            builder: (context, provider, _) {
-              final total = provider.history.length;
-              final done =
-                  provider.history.where((s) => s.status == AuditStatus.complete).length;
-              final avgScore = done == 0
-                  ? 0
-                  : provider.history
-                          .where((s) => s.status == AuditStatus.complete)
-                          .map((s) => s.report?.overallScore ?? 0)
-                          .fold(0, (a, b) => a + b) ~/
-                      done;
-
-              return Row(
-                children: [
-                  _StatChip(label: 'Total Audits', value: '$total'),
-                  const SizedBox(width: 12),
-                  _StatChip(label: 'Avg Score', value: '$avgScore'),
-                  const SizedBox(width: 12),
-                  _StatChip(label: 'Completed', value: '$done'),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
-    ).animate().fadeIn(duration: 500.ms);
-  }
-
-  Widget _buildQuickAction() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-      child: GestureDetector(
-        onTap: () => _navigateToIngestion(),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: AppColors.richBlack,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.richBlack.withOpacity(0.15),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Icon(
-                  Icons.add_circle_outline_rounded,
-                  color: Colors.white,
-                  size: 26,
-                ),
-              ),
-              const SizedBox(width: 18),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'New Audit',
-                      style: GoogleFonts.inter(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Upload syllabus + exam to get started',
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: Colors.white.withOpacity(0.6),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                color: Colors.white.withOpacity(0.5),
-                size: 16,
-              ),
-            ],
-          ),
-        ),
-      ),
-    ).animate().fadeIn(delay: 100.ms, duration: 500.ms).slideY(begin: 0.05);
-  }
-
-  Widget _buildHistoryList() {
-    return Consumer<AuditProvider>(
-      builder: (context, provider, _) {
-        final history = provider.history.take(5).toList();
-
-        if (history.isEmpty) {
-          return SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: GlassCard(
-                child: Column(
-                  children: [
-                    const SizedBox(height: 16),
-                    Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        color: AppColors.grey100,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Icon(
-                        Icons.inbox_outlined,
-                        color: AppColors.grey400,
-                        size: 30,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No audits yet',
-                      style: GoogleFonts.inter(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.richBlack,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Upload your first exam to get started',
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: AppColors.grey500,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                ),
-              ),
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(context),
+                const SizedBox(height: 32),
+                _buildStatsRow(context),
+                const SizedBox(height: 32),
+                _buildInsightsSection(context),
+                const SizedBox(height: 32),
+                _buildRecentAuditsHeader(),
+                const SizedBox(height: 16),
+                _buildRecentAuditsList(context),
+              ],
             ),
-          );
-        }
-
-        return SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, i) {
-              final session = history[i];
-              return _AuditSessionCard(
-                session: session,
-                index: i,
-                onTap: () {
-                  if (session.status == AuditStatus.complete) {
-                    context.read<AuditProvider>().setCurrentSession(session);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const ReportScreen()),
-                    );
-                  }
-                },
-              );
-            },
-            childCount: history.length,
           ),
-        );
-      },
-    );
-  }
-
-  void _navigateToIngestion() {
-    context.read<AuditProvider>().reset();
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const IngestionScreen()),
-    );
-  }
-}
-
-// ── Sub-widgets ───────────────────────────────────────────────────────────────
-
-class _StatChip extends StatelessWidget {
-  const _StatChip({required this.label, required this.value});
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.grey200),
         ),
-        child: Column(
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    final hour = DateTime.now().hour;
+    String greeting = 'Good evening';
+    if (hour < 12) greeting = 'Good morning';
+    else if (hour < 17) greeting = 'Good afternoon';
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              value,
+              greeting,
               style: GoogleFonts.inter(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-                color: AppColors.richBlack,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.grey500,
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 4),
             Text(
-              label,
+              'Dashboard',
               style: GoogleFonts.inter(
-                fontSize: 11,
-                color: AppColors.grey500,
-                fontWeight: FontWeight.w500,
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                color: AppColors.richBlack,
+                letterSpacing: -0.5,
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _AuditSessionCard extends StatelessWidget {
-  const _AuditSessionCard({
-    required this.session,
-    required this.index,
-    required this.onTap,
-  });
-  final AuditSession session;
-  final int index;
-  final VoidCallback onTap;
-
-  Color get _statusColor {
-    switch (session.status) {
-      case AuditStatus.complete:
-        return AppColors.success;
-      case AuditStatus.error:
-        return AppColors.danger;
-      default:
-        return AppColors.warning;
-    }
-  }
-
-  IconData get _statusIcon {
-    switch (session.status) {
-      case AuditStatus.complete:
-        return Icons.check_circle_rounded;
-      case AuditStatus.error:
-        return Icons.error_rounded;
-      default:
-        return Icons.hourglass_top_rounded;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final score = session.report?.overallScore;
-    final questionCount = session.report?.questions.length ?? 0;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-      child: GlassCard(
-        padding: const EdgeInsets.all(18),
-        onTap: onTap,
-        child: Row(
-          children: [
-            // Score badge or status icon
-            Container(
-              width: 52,
-              height: 52,
+        Consumer<AuthProvider>(
+          builder: (context, auth, _) {
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: score != null
-                    ? _scoreColor(score).withOpacity(0.1)
-                    : AppColors.grey100,
-                borderRadius: BorderRadius.circular(14),
+                color: auth.isAuthenticated ? AppColors.successLight : AppColors.dangerLight,
+                borderRadius: BorderRadius.circular(20),
               ),
-              child: Center(
-                child: score != null
-                    ? Text(
-                        '$score',
-                        style: GoogleFonts.inter(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: _scoreColor(score),
-                        ),
-                      )
-                    : Icon(_statusIcon, color: _statusColor, size: 22),
+              child: Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: auth.isAuthenticated ? AppColors.success : AppColors.danger,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    auth.isAuthenticated ? 'Online' : 'Offline',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: auth.isAuthenticated ? AppColors.success : AppColors.danger,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ],
+    ).animate().fadeIn(duration: 400.ms);
+  }
+
+  Widget _buildStatsRow(BuildContext context) {
+    return Consumer<AuditProvider>(
+      builder: (context, provider, _) {
+        final total = provider.history.length;
+        final completed = provider.completedCount;
+        final avgScore = provider.averageScore;
+
+        return Row(
+          children: [
+            Expanded(
+              child: _StatCard(
+                label: 'Total Audits',
+                value: '$total',
+                icon: Icons.article_outlined,
+                color: AppColors.accent,
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             Expanded(
+              child: _StatCard(
+                label: 'Completed',
+                value: '$completed',
+                icon: Icons.check_circle_outline_rounded,
+                color: AppColors.success,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _StatCard(
+                label: 'Avg Score',
+                value: '$avgScore',
+                icon: Icons.speed_rounded,
+                color: _scoreColor(avgScore),
+              ),
+            ),
+          ],
+        );
+      },
+    ).animate().fadeIn(delay: 100.ms, duration: 400.ms);
+  }
+
+  Widget _buildInsightsSection(BuildContext context) {
+    return Consumer<AuditProvider>(
+      builder: (context, provider, _) {
+        final last = provider.lastCompletedAudit;
+        if (last == null) {
+          return const SizedBox.shrink();
+        }
+
+        final trend = provider.theoryApplicationTrend;
+        final recType = provider.mostCommonRecommendationType;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Quick Insights',
+              style: GoogleFonts.inter(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppColors.richBlack,
+              ),
+            ),
+            const SizedBox(height: 16),
+            GlassCard(
+              padding: const EdgeInsets.all(20),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    session.courseTitle,
-                    style: GoogleFonts.inter(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.richBlack,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(Icons.calendar_today_outlined,
-                          size: 11, color: AppColors.grey400),
-                      const SizedBox(width: 4),
-                      Text(
-                        _formatDate(session.createdAt),
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: AppColors.grey500,
+                      ScoreRing(
+                        score: last.report?.overallScore ?? 0,
+                        size: 80,
+                        lineWidth: 8,
+                        showLabel: false,
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Latest Audit Score',
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.grey500,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              last.courseTitle,
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.richBlack,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
                       ),
-                      if (questionCount > 0) ...[
-                        const SizedBox(width: 10),
-                        Text('·', style: GoogleFonts.inter(color: AppColors.grey300)),
-                        const SizedBox(width: 10),
-                        Text(
-                          '$questionCount questions',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            color: AppColors.grey500,
+                    ],
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Divider(height: 1),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Theory vs App',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: AppColors.grey500,
+                            ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 4),
+                          Text(
+                            '${trend.theory.toStringAsFixed(0)}% / ${trend.application.toStringAsFixed(0)}%',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.richBlack,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            'Top Action Area',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: AppColors.grey500,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _capitalize(recType),
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.accent,
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 10),
-            Icon(Icons.chevron_right_rounded,
-                color: AppColors.grey300, size: 20),
           ],
+        ).animate().fadeIn(delay: 150.ms, duration: 400.ms);
+      },
+    );
+  }
+
+  Widget _buildRecentAuditsHeader() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          'Recent Audits',
+          style: GoogleFonts.inter(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: AppColors.richBlack,
+          ),
         ),
-      ),
-    )
-        .animate(delay: (index * 60).ms)
-        .fadeIn(duration: 400.ms)
-        .slideX(begin: 0.04, duration: 400.ms);
+        Text(
+          'View History',
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppColors.accent,
+          ),
+        ),
+      ],
+    ).animate().fadeIn(delay: 200.ms, duration: 400.ms);
+  }
+
+  Widget _buildRecentAuditsList(BuildContext context) {
+    return Consumer<AuditProvider>(
+      builder: (context, provider, _) {
+        if (provider.history.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.all(32),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.grey200, width: 1),
+            ),
+            child: Column(
+              children: [
+                Icon(Icons.dashboard_customize_outlined, size: 48, color: AppColors.grey300),
+                const SizedBox(height: 16),
+                Text(
+                  'No Audits Yet',
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.richBlack,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Start your first AI exam audit\nfrom the New Audit tab.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: AppColors.grey500,
+                  ),
+                ),
+              ],
+            ),
+          ).animate().fadeIn(delay: 250.ms);
+        }
+
+        final recent = provider.history.take(3).toList();
+        
+        return Column(
+          children: recent.map((session) {
+            final score = session.report?.overallScore;
+            final isError = session.status.name == 'error';
+            
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: GlassCard(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: isError
+                            ? AppColors.dangerLight
+                            : score != null
+                                ? _scoreColor(score).withOpacity(0.15)
+                                : AppColors.grey100,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Center(
+                        child: isError
+                            ? const Icon(Icons.error_rounded, color: AppColors.danger, size: 20)
+                            : score != null
+                                ? Text(
+                                    '$score',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w800,
+                                      color: _scoreColor(score),
+                                    ),
+                                  )
+                                : const Icon(Icons.hourglass_top_rounded, color: AppColors.warning, size: 18),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            session.courseTitle,
+                            style: GoogleFonts.inter(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.richBlack,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${session.createdAt.day}/${session.createdAt.month}/${session.createdAt.year} · ${session.status.name}',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: AppColors.grey500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ).animate().fadeIn(delay: 250.ms, duration: 400.ms);
+      },
+    );
   }
 
   Color _scoreColor(int score) {
@@ -485,12 +418,69 @@ class _AuditSessionCard extends StatelessWidget {
     if (score >= 60) return AppColors.warning;
     return AppColors.danger;
   }
+  
+  String _capitalize(String s) {
+    if (s.isEmpty) return s;
+    return s[0].toUpperCase() + s.substring(1);
+  }
+}
 
-  String _formatDate(DateTime dt) {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-    ];
-    return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
+class _StatCard extends StatelessWidget {
+  const _StatCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.grey200),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.richBlack.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: GoogleFonts.inter(
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              color: AppColors.richBlack,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppColors.grey500,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
   }
 }

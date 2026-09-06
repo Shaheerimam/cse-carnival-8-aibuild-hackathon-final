@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import '../models/audit_session.dart';
-import '../models/audit_report.dart';
 import '../services/gemini_service.dart';
 import '../services/audit_storage_service.dart';
 

@@ -1,13 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/app_colors.dart';
 import 'providers/audit_provider.dart';
-import 'screens/home/home_screen.dart';
+import 'providers/auth_provider.dart';
+import 'screens/app_shell.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   // Lock to portrait for a focused mobile-first experience
   await SystemChrome.setPreferredOrientations([
@@ -34,13 +42,18 @@ class ExamAuditorApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuditProvider()),
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider()..initialize(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => AuditProvider()..loadHistory(),
+        ),
       ],
       child: MaterialApp(
         title: 'ExamAuditor',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
-        home: const HomeScreen(),
+        home: const AppShell(),
         builder: (context, child) {
           // Clamp text scale to prevent layout overflows on large-font systems
           final data = MediaQuery.of(context);
